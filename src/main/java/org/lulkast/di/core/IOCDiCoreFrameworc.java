@@ -1,11 +1,14 @@
 package org.lulkast.di.core;
 
 import com.google.common.base.Strings;
-import org.lulkast.di.annotations.MyFrameworkBootStart;
-import org.reflections.Reflections;
 import org.lulkast.di.annotations.Component;
 import org.lulkast.di.annotations.Inject;
-import ru.lulkast.Main;
+import org.lulkast.di.annotations.MyFrameworkBootStart;
+import org.reflections.Reflections;
+import org.reflections.scanners.MethodAnnotationsScanner;
+import org.reflections.scanners.Scanner;
+import org.reflections.scanners.SubTypesScanner;
+import org.reflections.scanners.TypeAnnotationsScanner;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -21,7 +24,7 @@ public final class IOCDiCoreFrameworc {
 
     public static void init(String packageName) {
         try {
-            Reflections reflections = new Reflections(packageName);
+            Reflections reflections = new Reflections(packageName, new MethodAnnotationsScanner(), new TypeAnnotationsScanner(), new SubTypesScanner());
             Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(Component.class);
             for (Class<?> aClass : typesAnnotatedWith) {
                 Constructor<?> constructor = aClass.getConstructor(null);
@@ -51,30 +54,20 @@ public final class IOCDiCoreFrameworc {
         }
     }
 
-    private static void injectAnnotationBeanProcessor() throws IllegalAccessException, NoSuchMethodException, InvocationTargetException, InstantiationException {
-        Collection<Object> beans = iocContainer.values();
-        for (Object bean : beans){
-            Constructor constructor = bean.getClass().getConstructor(Inject.class);
-            constructor.setAccessible(true);
-            Class<?> interfaceOfImplementedSomething = constructor.getParameterTypes()[0];
-            Object dependency = getByInterface(interfaceOfImplementedSomething);
-            constructor.newInstance(dependency);
-        }
-
-
-
-
-       /* for (Object bean : beans) {
-            Field[] declaredFields = bean.getClass().getDeclaredFields();//упростить с помощью библиотеки reflections
-            for (Field declaredField : declaredFields) {
-                if (Objects.nonNull(declaredField.getAnnotation(Inject.class))) {
-                    declaredField.setAccessible(true);
-                    Class<?> interfaceOfImplementedSomething = declaredField.getType();
+    private static void injectAnnotationBeanProcessor() throws IllegalAccessException, InvocationTargetException, InstantiationException {
+        for (Map.Entry<Class<?>, Object> set : iocContainer.entrySet()) {
+            Object bean = set.getValue();
+            Constructor[] constructors = bean.getClass().getConstructors();
+            for (Constructor constructor : constructors) {
+                if (constructor.isAnnotationPresent(Inject.class)) {
+                    constructor.setAccessible(true);
+                    Class<?> interfaceOfImplementedSomething = constructor.getParameterTypes()[0];
                     Object dependency = getByInterface(interfaceOfImplementedSomething);
-                    declaredField.set(bean, dependency);
+                    bean = constructor.newInstance(dependency);
+                    iocContainer.put(set.getKey(), bean);
                 }
             }
-        } */
+        }
     }
 
     @SuppressWarnings("unchecked")

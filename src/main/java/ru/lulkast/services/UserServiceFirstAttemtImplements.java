@@ -23,6 +23,7 @@ public class UserServiceFirstAttemtImplements implements UserService {
         this.repository = repository;
     }
 
+    public UserServiceFirstAttemtImplements(){}
 
     @Override
     public User getByUUID(UUID uuid) throws NotFoundException, SQLException {

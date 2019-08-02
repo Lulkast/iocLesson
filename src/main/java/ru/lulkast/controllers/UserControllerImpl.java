@@ -18,8 +18,11 @@ public class UserControllerImpl implements UserController {
 
     @Inject
     public UserControllerImpl (UserService service){
+        System.out.println("const work");
         this.service = service;
     }
+
+    public UserControllerImpl(){}
 
     @Override
     public String getUserById(String id) throws SQLException {
