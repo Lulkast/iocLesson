@@ -49,13 +49,6 @@ public class App implements AppInterface {
             System.out.println("Table \"dbuser\" is created!");
         } catch (SQLException e) {
             System.out.println(e.getMessage());
-        } finally {
-            if (statement != null) {
-                statement.close();
-            }
-            if (dbConnection != null) {
-                dbConnection.close();
-            }
-        }
+        } 
     }
 }

@@ -6,18 +6,17 @@ import org.lulkast.di.annotations.Inject;
 import org.lulkast.di.annotations.MyFrameworkBootStart;
 import org.reflections.Reflections;
 import org.reflections.scanners.MethodAnnotationsScanner;
-import org.reflections.scanners.Scanner;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
 public final class IOCDiCoreFrameworc {
     private static Map<Class<?>, Object> iocContainer = new HashMap();
+    private static HashMap<String, BeanDefinition> beanDefinitionHashMap = new HashMap<>();
 
     private IOCDiCoreFrameworc() {
     }
@@ -26,19 +25,52 @@ public final class IOCDiCoreFrameworc {
         try {
             Reflections reflections = new Reflections(packageName, new MethodAnnotationsScanner(), new TypeAnnotationsScanner(), new SubTypesScanner());
             Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(Component.class);
-            for (Class<?> aClass : typesAnnotatedWith) {
-                Constructor<?> constructor = aClass.getConstructor(null);
-                Object bean = constructor.newInstance();
-                Class<?>[] interfaces = aClass.getInterfaces();
-                for (Class<?> anInterface : interfaces) {
-                    iocContainer.put(anInterface, bean);
+            Set<Constructor> constructors = new HashSet<>();
+            typesAnnotatedWith.stream()
+                    .forEach(clazz -> Arrays.stream(clazz.getConstructors())
+                            .forEach(constructor -> constructors.add(constructor)));
+
+            for (Constructor constructor : constructors) {
+                String name = constructor.getDeclaringClass().getSimpleName();
+                Class clazz = constructor.getDeclaringClass();
+                Class interf = clazz.getInterfaces()[0];
+                Class[] dependencies = constructor.getParameterTypes();
+                if (dependencies.length == 0) beanDefinitionHashMap.put(name, new BeanDefinition(clazz, interf, null));
+                else for (Class dependency : dependencies) {
+                    beanDefinitionHashMap.put(name, new BeanDefinition(clazz, interf, dependency));
                 }
             }
-            injectAnnotationBeanProcessor();
+
+            HashMap<String, BeanDefinition> beanDefinitionHashMapCopy = new HashMap<>();
+            beanDefinitionHashMapCopy.putAll(beanDefinitionHashMap);
+
+            while (!beanDefinitionHashMap.isEmpty()) {
+                for (Map.Entry<String, BeanDefinition> stringBeanDefinitionEntry : beanDefinitionHashMapCopy.entrySet()) {
+                    createBeans(stringBeanDefinitionEntry);
+                }
+            }
             createDataBaseIfNeeded();
         } catch (Exception e) {
             e.printStackTrace();
             throw new Error("Fuck");
+        }
+    }
+
+    private static void createBeans (Map.Entry<String, BeanDefinition> map) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        Class clazz = map.getValue().clazz;
+        Class dependency = map.getValue().dependency;
+        Class inter = map.getValue().interf;
+        Object bean = null;
+        if (Objects.isNull(dependency)) {
+            Constructor constructor = clazz.getConstructor(null);
+            bean = constructor.newInstance();
+        } else if (iocContainer.containsKey(dependency)) {
+            Constructor constructor = clazz.getConstructor(dependency);
+            bean = constructor.newInstance(iocContainer.get(dependency));
+        }
+        if (Objects.nonNull(bean)){
+            iocContainer.put(inter, bean);
+            beanDefinitionHashMap.remove(map.getKey());
         }
     }
 
@@ -49,22 +81,6 @@ public final class IOCDiCoreFrameworc {
             for (Method declaredMethod : declaredMethods) {
                 if (Objects.nonNull(declaredMethod.getDeclaredAnnotation(Inject.class))) {
                     declaredMethod.invoke(bean);
-                }
-            }
-        }
-    }
-
-    private static void injectAnnotationBeanProcessor() throws IllegalAccessException, InvocationTargetException, InstantiationException {
-        for (Map.Entry<Class<?>, Object> set : iocContainer.entrySet()) {
-            Object bean = set.getValue();
-            Constructor[] constructors = bean.getClass().getConstructors();
-            for (Constructor constructor : constructors) {
-                if (constructor.isAnnotationPresent(Inject.class)) {
-                    constructor.setAccessible(true);
-                    Class<?> interfaceOfImplementedSomething = constructor.getParameterTypes()[0];
-                    Object dependency = getByInterface(interfaceOfImplementedSomething);
-                    bean = constructor.newInstance(dependency);
-                    iocContainer.put(set.getKey(), bean);
                 }
             }
         }

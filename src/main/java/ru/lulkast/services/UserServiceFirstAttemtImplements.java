@@ -23,8 +23,6 @@ public class UserServiceFirstAttemtImplements implements UserService {
         this.repository = repository;
     }
 
-    public UserServiceFirstAttemtImplements(){}
-
     @Override
     public User getByUUID(UUID uuid) throws NotFoundException, SQLException {
         User foundUser = repository.findByUUID(uuid);
@@ -34,10 +32,17 @@ public class UserServiceFirstAttemtImplements implements UserService {
 
     @Override
     public User save(User user) throws SQLException {
-        if (Objects.isNull(user) ||
-                Objects.isNull(user.getUuid()) ||
-                Strings.isNullOrEmpty(user.getUserName())||
-                Strings.isNullOrEmpty(user.getMd5Password())) throw new IllegalArgumentException();
+        try {
+            if (Objects.isNull(user) ||
+                    Objects.isNull(user.getUuid()) ||
+                    Strings.isNullOrEmpty(user.getUserName())||
+                    Strings.isNullOrEmpty(user.getMd5Password())) throw new IllegalArgumentException();
+        }
+        catch (NullPointerException e){
+            System.out.println("ctch in us");
+            e.printStackTrace();
+        }
+
         return repository.saveUser(user);
     }
 

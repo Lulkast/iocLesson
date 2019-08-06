@@ -22,8 +22,6 @@ public class UserRepositorySaveToMap implements UserRepository {
         this.appInterface = appInterface;
     }
 
-    public UserRepositorySaveToMap(){}
-
     @Override
     public User findByUUID(UUID uuid) throws SQLException {
         Connection dbConnection = null;

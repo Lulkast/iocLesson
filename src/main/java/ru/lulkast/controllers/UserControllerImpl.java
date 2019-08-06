@@ -14,15 +14,13 @@ import java.util.stream.Collectors;
 
 @Component
 public class UserControllerImpl implements UserController {
-    private UserService service;
+    public UserService service;
 
     @Inject
     public UserControllerImpl (UserService service){
-        System.out.println("const work");
         this.service = service;
     }
 
-    public UserControllerImpl(){}
 
     @Override
     public String getUserById(String id) throws SQLException {
@@ -37,12 +35,18 @@ public class UserControllerImpl implements UserController {
 
     @Override
     public String saveUser(String userName, String password) throws SQLException {
+
         User user = new User(UUID.randomUUID(), userName, password);
         try {
             User saved = service.save(user);
             return saved.toString();
         } catch (IllegalArgumentException e) {
             return e.getMessage();
+        }
+        catch ( NullPointerException e){
+            System.out.println("catch");
+            e.printStackTrace();
+            return null;
         }
     }
 
