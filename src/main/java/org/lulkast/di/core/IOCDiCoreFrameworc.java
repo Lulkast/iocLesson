@@ -26,6 +26,9 @@ public final class IOCDiCoreFrameworc {
             Reflections reflections = new Reflections(packageName, new MethodAnnotationsScanner(), new TypeAnnotationsScanner(), new SubTypesScanner());
             Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(Component.class);
             Set<Constructor> constructors = new HashSet<>();
+            String name1;
+            Class clazz1;
+            Class interf1;
             typesAnnotatedWith.stream()
                     .forEach(clazz -> Arrays.stream(clazz.getConstructors())
                             .forEach(constructor -> constructors.add(constructor)));

@@ -11,7 +11,7 @@ public class Main {
     public static void main(String[] args) throws SQLException {
         IOCDiCoreFrameworc.run(Main.class);
         UserController controller = IOCDiCoreFrameworc.getByInterface(UserController.class);
-        controller.saveUser("user1", "password1");
+        controller.saveUser("user1r", "password1r");
         System.out.println(controller.getAllUsers());
     }
 }
